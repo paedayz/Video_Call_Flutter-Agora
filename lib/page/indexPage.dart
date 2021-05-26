@@ -73,6 +73,20 @@ class _IndexPageState extends State<IndexPage> {
                         });
                       },
                     ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: RaisedButton(
+                          onPressed: onJoin,
+                          child: Text('Join'),
+                          color: Colors.blueAccent,
+                          textColor: Colors.white,
+                        ))
+                      ],
+                    ),
                   )
                 ],
               )
