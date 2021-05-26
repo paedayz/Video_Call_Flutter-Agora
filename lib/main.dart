@@ -1,4 +1,8 @@
+import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
+import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
 
 const appId = "6dd9d3a2d571494798400064f6c23e40";
 const token =
@@ -28,6 +32,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _remoteUid;
+  RtcEngine _engine;
 
   @override
   void initState() {
@@ -35,7 +40,32 @@ class _MyHomePageState extends State<MyHomePage> {
     initForAgora();
   }
 
-  Future<void> initForAgora() async {}
+  Future<void> initForAgora() async {
+    // retrieve permissions
+    await [Permission.microphone, Permission.camera].request();
+
+    // create the engine
+    _engine = await RtcEngine.createWithConfig(RtcEngineConfig(appId));
+
+    await _engine.enableVideo();
+
+    _engine.setEventHandler(RtcEngineEventHandler(
+        joinChannelSuccess: (String channel, int uid, int elapsed) {
+      print("local user $uid joined");
+    }, userJoined: (int uid, int elapsed) {
+      print("remote user $uid joined");
+      setState(() {
+        _remoteUid = uid;
+      });
+    }, userOffline: (int uid, UserOfflineReason reason) {
+      print("remote user $uid left channel");
+      setState(() {
+        _remoteUid = null;
+      });
+    }));
+
+    await _engine.joinChannel(token, 'firstchannel', null, 0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,13 +95,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // current user video
   Widget _renderLocalPreview() {
-    return Container();
+    return RtcLocalView.SurfaceView();
   }
 
   // remote user video
   Widget _renderRemoteVideo() {
     if (_remoteUid != null) {
-      return Container();
+      return RtcRemoteView.SurfaceView(
+        uid: _remoteUid,
+      );
     } else {
       return Text(
         'Please wait remote user to join',
